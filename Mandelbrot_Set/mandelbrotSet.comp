@@ -1,0 +1,77 @@
+#version 430 core
+
+layout(local_size_x = 32, local_size_y = 32) in;
+layout(rgba32f, binding = 0) uniform image2D outputTex;
+
+uniform float zoom;
+uniform float center_x;
+uniform float center_y;
+
+const int max_iterations = 600;
+
+vec3 palette(float t)
+{
+    vec3 color_0 = vec3(0.0f, 0.0f, 0.0f);
+    vec3 color_1 = vec3(0.0f, 0.2f, 0.5f);
+    vec3 color_2 = vec3(1.0f, 0.8f, 0.0f);
+    vec3 color_3 = vec3(1.0f, 0.0f, 0.4f);
+    
+    if (t < 0.33f)
+    {
+        return mix(color_0, color_1, t / 0.33f);
+    }
+    else if (t < 0.66f)
+    {
+        return mix(color_1, color_2, (t - 0.33f) / 0.33f);
+    }
+    else
+    {
+        return mix(color_2, color_3, (t - 0.66f) / 0.34f);
+    }
+}
+
+void main()
+{
+    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 textureSize = imageSize(outputTex);
+    
+    if (texelCoord.x >= textureSize.x || texelCoord.y >= textureSize.y)
+    {
+        return;
+    }
+    
+    vec2 uv = vec2(texelCoord) / vec2(textureSize);
+    
+    float aspect = float(textureSize.x) / float(textureSize.y);
+    uv.x *= aspect;
+
+    uv = (uv - 0.5) * 2.0;
+    uv = uv * zoom + vec2(center_x, center_y);
+    
+    vec2 c = uv;
+    vec2 z = vec2(0.0);
+    int iterations = 0;
+    
+    for (int i = 0; i < max_iterations; i++)
+    {
+        z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + c;
+        if (dot(z, z) > 4.0)
+        {
+            break;
+        }
+        iterations++;
+    }
+    
+    vec3 color;
+    if (iterations == max_iterations)
+    {
+        color = vec3(0.0); // Black for points in the set
+    }
+    else
+    {
+        float t = float(iterations) / float(max_iterations);
+        color = palette(t);
+    }
+    
+    imageStore(outputTex, texelCoord, vec4(color, 1.0));
+}
