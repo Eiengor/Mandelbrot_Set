@@ -1,0 +1,5 @@
+1) Structurise a main.cpp
+2) Add panel for:
+	- FPS
+	- Iterations
+3) Optmise rendering
