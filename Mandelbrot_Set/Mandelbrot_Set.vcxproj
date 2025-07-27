@@ -138,6 +138,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\OpenGL\glad\src\glad.c" />
+    <ClCompile Include="Application.cpp" />
     <ClCompile Include="ComputeShader.cpp" />
     <ClCompile Include="EBO.cpp" />
     <ClCompile Include="main.cpp" />
@@ -147,6 +148,7 @@
     <ClCompile Include="VBO.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Application.h" />
     <ClInclude Include="ComputeShader.h" />
     <ClInclude Include="EBO.h" />
     <ClInclude Include="Shader.h" />

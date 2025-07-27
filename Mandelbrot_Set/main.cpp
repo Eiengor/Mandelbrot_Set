@@ -1,20 +1,23 @@
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+
 #include <iostream>
 #include <stdlib.h>
 #include <string>
 #include <math.h>
 #include <algorithm>
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <vector>
 #include <chrono>
 #include <numeric>
+
 #include "VAO.h"
 #include "VBO.h"
 #include "EBO.h"
 #include "Shader.h"
 #include "Texture.h"
 #include "ComputeShader.h"
+#include "Application.h"
 
 using namespace std;
 using namespace glm;
@@ -42,12 +45,6 @@ unsigned int indices[] = {
         0, 1, 2,
         0, 3, 1
 };
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
-    glViewport(0, 0, width, height);
-    screen_width = width;
-    screen_height = height;
-}
 
 void process_input(GLFWwindow* window)
 {
@@ -123,96 +120,93 @@ void countFPS() {
 
 int main() {
     auto start_time = chrono::high_resolution_clock::now();
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(screen_width, screen_height, "Mandelbrot", NULL, NULL);
-    if (window == nullptr) {
-        cout << "Failed to create GLFW window!\n";
+    try
+    {
+        Application app(screen_width, screen_height, "Mandelbrot");
+        Texture mandelbrotTexture(screen_width, screen_height);
+        Shader displayShader("textureDisplay.vert", "textureDisplay.frag");
+        ComputeShader computeShader("mandelbrotSet.comp");
+
+        VAO vao;
+        vao.Bind();
+        VBO vbo(vertices, sizeof(vertices));
+        EBO ebo(indices, sizeof(indices));
+        vao.LinkVBO(vbo, 0);
+        vao.Unbind();
+
+        last_time = glfwGetTime();
+        vector<float> fpsHistory;
+        int fCounter = 0;
+        int time_stopper = 0;
+
+        while (!app.shouldClose())
+        {
+            app.beginFrame();
+
+            float currentFrame = glfwGetTime();
+            deltaTime = currentFrame - lastFrame;
+            lastFrame = currentFrame;
+
+            process_input(app.getWindow());
+            float fps = 1.0f / deltaTime;
+            fpsHistory.push_back(fps);
+
+            if (fCounter > 100) {
+                cout << "FPS: " << fps << endl;
+                fCounter = 0;
+            }
+            else {
+                fCounter++;
+            }
+
+            computeShader.Activate();
+            computeShader.set_float("zoom", zoom);
+            computeShader.set_float("center_x", center_x);
+            computeShader.set_float("center_y", center_y);
+
+            glDispatchCompute((screen_width + 31) / 32, (screen_height + 31) / 32, 1);
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+            glClearColor(0.2f, 0.0f, 0.2f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            displayShader.Activate();
+            vao.Bind();
+            mandelbrotTexture.Activate();
+            displayShader.set_int("mandelbrotTex", 0);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+            if (time_stopper == 0)
+            {
+                auto end_time = chrono::high_resolution_clock::now();
+                chrono::duration<double> startup_duration = end_time - start_time;
+                cout << "Startup time: " << startup_duration.count() << " seconds" << endl;
+                time_stopper = 1;
+            }
+
+            app.endFrame();
+        }
+        if (!fpsHistory.empty()) {
+            float sum = accumulate(fpsHistory.begin(), fpsHistory.end(), 0.0f);
+            float avgFps = sum / fpsHistory.size();
+            cout << "Average FPS: " << avgFps << endl;
+        }
+
+        vao.Delete();
+        vbo.Delete();
+        ebo.Delete();
+        mandelbrotTexture.Delete();
+        displayShader.Delete();
+        computeShader.Delete();
+        fpsHistory.clear();
+        fpsHistory.shrink_to_fit();
         glfwTerminate();
+        return 0;
+    }
+    catch (const exception& e)
+    {
+        cerr << "Error: " << e.what() << endl;
         return -1;
     }
-    glfwMakeContextCurrent(window);
-    glfwSwapInterval(0);
-    gladLoadGL();
-    glViewport(0, 0, screen_width, screen_height);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
-	Texture mandelbrotTexture(screen_width, screen_height);
-    Shader displayShader("textureDisplay.vert", "textureDisplay.frag");
-    ComputeShader computeShader("mandelbrotSet.comp");
-
-    VAO vao;
-	vao.Bind();
-	VBO vbo(vertices, sizeof(vertices));
-	EBO ebo(indices, sizeof(indices));
-	vao.LinkVBO(vbo, 0);
-	vao.Unbind();
-
-    last_time = glfwGetTime();
-    vector<float> fpsHistory;
-    int fCounter = 0;
-    int time_stopper = 0;
-    while (!glfwWindowShouldClose(window)) {
-        float currentFrame = glfwGetTime();
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
-
-        process_input(window);
-        float fps = 1.0f / deltaTime;
-        fpsHistory.push_back(fps);
-
-        if (fCounter > 100) {
-            cout << "FPS: " << fps << endl;
-            fCounter = 0;
-        }
-        else {
-            fCounter++;
-        }
-
-        computeShader.Activate();
-        computeShader.set_float("zoom", zoom);
-        computeShader.set_float("center_x", center_x);
-        computeShader.set_float("center_y", center_y);
-
-        glDispatchCompute((screen_width + 31) / 32, (screen_height + 31) / 32, 1);
-        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-
-        glClearColor(0.2f, 0.0f, 0.2f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        displayShader.Activate();
-		vao.Bind();
-        mandelbrotTexture.Activate();
-        displayShader.set_int("mandelbrotTex", 0);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-        if (time_stopper == 0)
-        {
-            auto end_time = chrono::high_resolution_clock::now();
-            chrono::duration<double> startup_duration = end_time - start_time;
-            cout << "Startup time: " << startup_duration.count() << " seconds" << endl;
-            time_stopper = 1;
-        }
-    }
-    if (!fpsHistory.empty()) {
-        float sum = accumulate(fpsHistory.begin(), fpsHistory.end(), 0.0f);
-        float avgFps = sum / fpsHistory.size();
-        cout << "Average FPS: " << avgFps << endl;
-    }
-
-	vao.Delete();
-	vbo.Delete();
-	ebo.Delete();
-	mandelbrotTexture.Delete();
-    displayShader.Delete();
-    computeShader.Delete();
-    fpsHistory.clear();
-    fpsHistory.shrink_to_fit();
-    glfwTerminate();
-    return 0;
 }
