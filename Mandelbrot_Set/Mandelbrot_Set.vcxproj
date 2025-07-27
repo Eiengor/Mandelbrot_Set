@@ -142,6 +142,7 @@
     <ClCompile Include="ComputeShader.cpp" />
     <ClCompile Include="EBO.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="VAO.cpp" />
@@ -151,6 +152,7 @@
     <ClInclude Include="Application.h" />
     <ClInclude Include="ComputeShader.h" />
     <ClInclude Include="EBO.h" />
+    <ClInclude Include="Renderer.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="VAO.h" />
