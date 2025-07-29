@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/Mandelbrot_Set/InputHandler.h
+/Mandelbrot_Set/InputHandler.cpp

@@ -6,14 +6,8 @@
 
 class InputHandler
 {
-private:
-    float movementSpeed = 0.01f;
-    float zoomSpeed = 0.04f;
-
 public:
-    void processInput(GLFWwindow* window, Renderer& renderer);
-    void setMovementSpeed(float speed) { movementSpeed = speed; }
-    void setZoomSpeed(float speed) { zoomSpeed = speed; }
+    void processInput(GLFWwindow* window, float& zoom, float& center_x, float& center_y);
 };
 
 #endif // INPUT_HANDLER_H

@@ -18,6 +18,8 @@
 #include "Texture.h"
 #include "ComputeShader.h"
 #include "Application.h"
+#include "Renderer.h"
+#include "InputHandler.h"
 
 using namespace std;
 using namespace glm;
@@ -46,68 +48,6 @@ unsigned int indices[] = {
         0, 3, 1
 };
 
-void process_input(GLFWwindow* window)
-{
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    {
-        glfwSetWindowShouldClose(window, true);
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-    {
-        center_y = center_y + 0.01f * zoom;
-        if (center_y > 1.0f)
-        {
-            center_y = 1.0f;
-        }
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-    {
-        center_y = center_y - 0.01f * zoom;
-        if (center_y < -1.0f)
-        {
-            center_y = -1.0f;
-        }
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-    {
-        center_x = center_x - 0.01f * zoom;
-        if (center_x < -1.0f)
-        {
-            center_x = -1.0f;
-        }
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-    {
-        center_x = center_x + 0.01f * zoom;
-        if (center_x > 1.0f)
-        {
-            center_x = 1.0f;
-        }
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-    {
-        zoom = zoom * 1.04f;
-        if (zoom > 1.0f)
-        {
-            zoom = 1.0f;
-        }
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
-    {
-        zoom = zoom * 0.96f;
-        if (zoom < 0.00001f)
-        {
-            zoom = 0.00001f;
-        }
-    }
-}
-
 void countFPS() {
     double current_time = glfwGetTime();
     num_frames++;
@@ -127,13 +67,15 @@ int main() {
         Texture mandelbrotTexture(screen_width, screen_height);
         Shader displayShader("textureDisplay.vert", "textureDisplay.frag");
         ComputeShader computeShader("mandelbrotSet.comp");
-
+        
         VAO vao;
         vao.Bind();
         VBO vbo(vertices, sizeof(vertices));
         EBO ebo(indices, sizeof(indices));
         vao.LinkVBO(vbo, 0);
         vao.Unbind();
+        Renderer renderer(screen_width, screen_height);
+        InputHandler inputHandler;
 
         last_time = glfwGetTime();
         vector<float> fpsHistory;
@@ -148,7 +90,8 @@ int main() {
             deltaTime = currentFrame - lastFrame;
             lastFrame = currentFrame;
 
-            process_input(app.getWindow());
+            inputHandler.processInput(app.getWindow(), zoom, center_x, center_y);
+            
             float fps = 1.0f / deltaTime;
             fpsHistory.push_back(fps);
 
@@ -160,22 +103,8 @@ int main() {
                 fCounter++;
             }
 
-            computeShader.Activate();
-            computeShader.set_float("zoom", zoom);
-            computeShader.set_float("center_x", center_x);
-            computeShader.set_float("center_y", center_y);
-
-            glDispatchCompute((screen_width + 31) / 32, (screen_height + 31) / 32, 1);
-            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-
-            glClearColor(0.2f, 0.0f, 0.2f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-            displayShader.Activate();
-            vao.Bind();
-            mandelbrotTexture.Activate();
-            displayShader.set_int("mandelbrotTex", 0);
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+            renderer.render(vao, mandelbrotTexture, displayShader, computeShader,
+                zoom, center_x, center_y);
 
             if (time_stopper == 0)
             {
@@ -193,12 +122,7 @@ int main() {
             cout << "Average FPS: " << avgFps << endl;
         }
 
-        vao.Delete();
-        vbo.Delete();
-        ebo.Delete();
-        mandelbrotTexture.Delete();
-        displayShader.Delete();
-        computeShader.Delete();
+        renderer.clear(vao, vbo, ebo, mandelbrotTexture, displayShader, computeShader);
         fpsHistory.clear();
         fpsHistory.shrink_to_fit();
         glfwTerminate();
