@@ -23,15 +23,17 @@
 #include "Application.h"
 #include "Renderer.h"
 #include "InputHandler.h"
+#include "Performance.h"
 
 int screen_width = 1600;
 int screen_height = 900;
 
 int num_frames = 0;
-float last_time = 0.0f;
 float center_x = 0.0f;
 float center_y = 0.0f;
 float zoom = 1.0f;
+
+float last_time = 0.0f;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 

@@ -143,6 +143,7 @@
     <ClCompile Include="EBO.cpp" />
     <ClCompile Include="InputHandler.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Performance.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Texture.cpp" />
@@ -154,6 +155,7 @@
     <ClInclude Include="ComputeShader.h" />
     <ClInclude Include="EBO.h" />
     <ClInclude Include="InputHandler.h" />
+    <ClInclude Include="Performance.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Resources.h" />
     <ClInclude Include="Shader.h" />

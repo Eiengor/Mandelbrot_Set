@@ -1,23 +1,13 @@
 #include "Resources.h"
-
 using namespace std;
 using namespace glm;
 
-void countFPS() {
-    double current_time = glfwGetTime();
-    num_frames++;
-    if (current_time - last_time >= 1.0) {
-        cout << 1000.0 / num_frames << "ms / frame\n";
-        num_frames = 0;
-        last_time += 1.0;
-    }
-}
-
 int main() {
-    auto start_time = chrono::high_resolution_clock::now();
-
     try
     {
+        Performance performance;
+        performance.startTime();
+
         Application app(screen_width, screen_height, "Mandelbrot");
         Texture mandelbrotTexture(screen_width, screen_height);
         Shader displayShader("textureDisplay.vert", "textureDisplay.frag");
@@ -31,55 +21,22 @@ int main() {
         vao.Unbind();
         Renderer renderer(screen_width, screen_height);
         InputHandler inputHandler;
-
-        last_time = glfwGetTime();
-        vector<float> fpsHistory;
-        int fCounter = 0;
-        int time_stopper = 0;
-
+        performance.getTime();
         while (!app.shouldClose())
         {
             app.beginFrame();
-
-            float currentFrame = glfwGetTime();
-            deltaTime = currentFrame - lastFrame;
-            lastFrame = currentFrame;
-
-            inputHandler.processInput(app.getWindow(), zoom, center_x, center_y);
-            
-            float fps = 1.0f / deltaTime;
-            fpsHistory.push_back(fps);
-
-            if (fCounter > 100) {
-                cout << "FPS: " << fps << endl;
-                fCounter = 0;
-            }
-            else {
-                fCounter++;
-            }
-
+            performance.setCurrentFrameTime();
+            inputHandler.processInput(app.getWindow(), zoom, center_x, center_y);     
+            performance.getAndSaveFPS();
+            performance.FPSToText();
             renderer.render(vao, mandelbrotTexture, displayShader, computeShader,
                 zoom, center_x, center_y);
-
-            if (time_stopper == 0)
-            {
-                auto end_time = chrono::high_resolution_clock::now();
-                chrono::duration<double> startup_duration = end_time - start_time;
-                cout << "Startup time: " << startup_duration.count() << " seconds" << endl;
-                time_stopper = 1;
-            }
-
+            performance.StartupDurationToText();
             app.endFrame();
         }
-        if (!fpsHistory.empty()) {
-            float sum = accumulate(fpsHistory.begin(), fpsHistory.end(), 0.0f);
-            float avgFps = sum / fpsHistory.size();
-            cout << "Average FPS: " << avgFps << endl;
-        }
-
+        cout << "Average FPS: " << performance.getAverageFPS() << endl;
         renderer.clear(vao, vbo, ebo, mandelbrotTexture, displayShader, computeShader);
-        fpsHistory.clear();
-        fpsHistory.shrink_to_fit();
+        performance.cleanFPSHistory();
         glfwTerminate();
         return 0;
     }
