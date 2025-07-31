@@ -1,6 +1,5 @@
-1) Structurise a main.cpp
-2) Add panel for:
+1) Add panel for:
 	- FPS
 	- Iterations
 I can actually do it with ImGUI.
-3) Optmise rendering
+2) Optmise rendering
