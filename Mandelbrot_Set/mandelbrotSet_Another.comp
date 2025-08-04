@@ -1,0 +1,91 @@
+#version 430 core
+layout(local_size_x = 32, local_size_y = 32) in;
+layout(rgba32f, binding = 0) uniform image2D outputTex;
+
+uniform float zoom;
+uniform float center_x;
+uniform float center_y;
+uniform vec4 color_ranges; // Add this uniform for flexible color ranges
+
+const int MAX_ITERATIONS = 1000;
+
+// Improved smooth coloring function
+vec3 getColor(int iterations, vec2 z) {
+    if (iterations == MAX_ITERATIONS) {
+        return vec3(0.0); // Black for points in the set
+    }
+    
+    // Smooth coloring using continuous iteration count
+    float smoothed = float(iterations) + 1.0 - log2(log2(dot(z, z))) / log2(2.0);
+    float t = smoothed / float(MAX_ITERATIONS);
+    
+    // Color palette
+    vec4 color_0 = vec4(0.0, 0.0, 0.0, 1.0);
+    vec4 color_1 = vec4(0.0, 0.2, 0.5, 1.0);
+    vec4 color_2 = vec4(1.0, 0.8, 0.0, 1.0);
+    vec4 color_3 = vec4(1.0, 0.0, 0.4, 1.0);
+    
+    // Use color_ranges for flexible interpolation
+    vec4 ranges = color_ranges;
+    if (ranges.x == 0.0 && ranges.y == 0.0 && ranges.z == 0.0 && ranges.w == 0.0) {
+        // Default ranges if not provided
+        ranges = vec4(0.0, 0.33, 0.66, 1.0);
+    }
+    
+    vec4 finalColor;
+    if (t < ranges.y) {
+        float fraction = (t - ranges.x) / (ranges.y - ranges.x);
+        finalColor = mix(color_0, color_1, clamp(fraction, 0.0, 1.0));
+    } else if (t < ranges.z) {
+        float fraction = (t - ranges.y) / (ranges.z - ranges.y);
+        finalColor = mix(color_1, color_2, clamp(fraction, 0.0, 1.0));
+    } else {
+        float fraction = (t - ranges.z) / (ranges.w - ranges.z);
+        finalColor = mix(color_2, color_3, clamp(fraction, 0.0, 1.0));
+    }
+    
+    return finalColor.rgb;
+}
+
+void main() {
+    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 textureSize = imageSize(outputTex);
+    
+    // Early exit for out-of-bounds threads
+    if (texelCoord.x >= textureSize.x || texelCoord.y >= textureSize.y) {
+        return;
+    }
+    
+    // Convert to normalized coordinates matching the fragment shader approach
+    vec2 fragCoord = vec2(texelCoord) + 0.5; // Add 0.5 for pixel center sampling
+    
+    // Match the coordinate system from the working fragment shader
+    // Assuming square viewport for now - adjust if needed
+    float real = ((fragCoord.x / float(textureSize.x) - 0.5) * zoom + center_x) * 4.0;
+    float imag = ((fragCoord.y / float(textureSize.y) - 0.5) * zoom + center_y) * 4.0;
+    
+    // Mandelbrot iteration
+    vec2 c = vec2(real, imag);
+    vec2 z = vec2(0.0);
+    int iterations = 0;
+    
+    // Optimized iteration loop
+    for (int i = 0; i < MAX_ITERATIONS; i++) {
+        // z = z? + c
+        float z_real = z.x * z.x - z.y * z.y + c.x;
+        float z_imag = 2.0 * z.x * z.y + c.y;
+        z = vec2(z_real, z_imag);
+        
+        // Check escape condition
+        if (dot(z, z) > 4.0) {
+            break;
+        }
+        iterations++;
+    }
+    
+    // Get final color
+    vec3 color = getColor(iterations, z);
+    
+    // Store the result
+    imageStore(outputTex, texelCoord, vec4(color, 1.0));
+}
