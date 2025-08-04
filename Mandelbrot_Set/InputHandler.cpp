@@ -28,9 +28,9 @@ void InputHandler::processInput(GLFWwindow* window, float& zoom, float& center_x
     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
     {
         center_x = center_x - 0.01f * zoom;
-        if (center_x < -1.0f)
+        if (center_x < -2.0f)
         {
-            center_x = -1.0f;
+            center_x = -2.0f;
         }
     }
 

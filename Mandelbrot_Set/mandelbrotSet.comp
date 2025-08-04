@@ -11,8 +11,8 @@ const int max_iterations = 600;
 
 vec3 palette(float t)
 {
-    vec3 color_0 = vec3(0.0f, 0.0f, 0.0f);
-    vec3 color_1 = vec3(0.0f, 0.2f, 0.5f);
+    vec3 color_0 = vec3(0.f, 0.05f, 0.05f);
+    vec3 color_1 = vec3(0.0f, 0.5f, 0.7f);
     vec3 color_2 = vec3(1.0f, 0.8f, 0.0f);
     vec3 color_3 = vec3(1.0f, 0.0f, 0.4f);
     
@@ -65,7 +65,7 @@ void main()
     vec3 color;
     if (iterations == max_iterations)
     {
-        color = vec3(0.0); // Black for points in the set
+        color = vec3(0.0);
     }
     else
     {
