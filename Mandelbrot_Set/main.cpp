@@ -12,7 +12,6 @@ int main() {
         Texture mandelbrotTexture(screen_width, screen_height);
         Shader displayShader("textureDisplay.vert", "textureDisplay.frag");
         ComputeShader computeShader("mandelbrotSet.comp");
-        
         VAO vao;
         vao.Bind();
         VBO vbo(vertices, sizeof(vertices));
@@ -21,6 +20,8 @@ int main() {
         vao.Unbind();
         Renderer renderer(screen_width, screen_height);
         InputHandler inputHandler;
+        UI ui(app, 1.5f);
+
         performance.getTime();
         while (!app.shouldClose())
         {
@@ -29,15 +30,19 @@ int main() {
             inputHandler.processInput(app.getWindow(), zoom, center_x, center_y);     
             performance.getAndSaveFPS();
             performance.FPSToText();
+            ui.NewFrame();
+            ui.ShowWindow(zoom, center_x, center_y, performance);
             renderer.render(vao, mandelbrotTexture, displayShader, computeShader,
                 zoom, center_x, center_y);
             performance.StartupDurationToText();
+            ui.Render();
             app.endFrame();
         }
         cout << "Average FPS: " << performance.getAverageFPS() << endl;
         renderer.clear(vao, vbo, ebo, mandelbrotTexture, displayShader, computeShader);
         performance.cleanFPSHistory();
-        glfwTerminate();
+        ui.clear();
+        app.~Application();
         return 0;
     }
     catch (const exception& e)

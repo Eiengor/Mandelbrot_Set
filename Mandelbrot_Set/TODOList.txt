@@ -2,4 +2,3 @@
 	- FPS
 	- Iterations
 I can actually do it with ImGUI.
-2) Optmise rendering

@@ -24,6 +24,7 @@
 #include "Renderer.h"
 #include "InputHandler.h"
 #include "Performance.h"
+#include "UI.h"
 
 int screen_width = 1600;
 int screen_height = 900;
